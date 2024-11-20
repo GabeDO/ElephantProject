@@ -1,0 +1,31 @@
+#
+import os
+import snakemake.io
+import glob
+
+
+configfile: "Config/config.yaml"
+
+
+include: "settings.smk"
+
+include: "../rules/BamAllignment.smk"
+include: "../rules/SNPCalling.smk"
+include: "../rules/SVCalling.smk"
+
+rule all:
+	input:
+		expand(SampleLocation+"/{sample}/{sample}_sampe_sorted.bam", sample = SAMPLES),
+		expand(SampleLocation+"/{sample}/{sample}_Coverage.out", sample = SAMPLES),
+		
+
+		expand("SNPs/ChromosomeVCFs/{chromosome}_Elephant_SNPs_NoMissing.vcf.gz", chromosome = CHROM_LIST),
+		#"SNPs/AllChrom_Elephant_SNPs_NoMissing.vcf.gz",
+		#"SNPs_Synonymous_NSSN.csv",
+		#"SNPs/Elephant_SNPs_NoMissing.geno",
+
+		expand("{sv}_all_genotyped_GeneID.csv", sv = SV),
+		expand("{sv}_all_genotyped.csv", sv = SV),
+		expand("Rearrangements_all_genotyped.csv", sv = SV),
+		#"pNpS_per_gene.out"
+		
