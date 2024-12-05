@@ -30,16 +30,16 @@ sampleloc = str(snakemake.params[3])+"/"
 
 
 def SetUpCovPerChromForElephant(Elephant_,Chromosome_,path__):
-    Process_ = "samtools depth -r " + str(Chromosome_) + " " +  str(path__) + "|  awk '{sum+=$3} END { print sum/NR}' "
+    Process_ = "samtools depth -r " + str(Chromosome_) + " " +  str(path__) + "|  awk '{sum+=$3} END {if (NR > 0) { print sum/(NR)} else {print 0}}' "
 
     
-    if str(Elephant_)+"_CovDICT" in globals():
+    if str(Elephant_).replace('-', '')+"_CovDICT" in globals():
         Cov = subprocess.check_output(Process_, shell=True)
-        eval(str(Elephant_)+"_CovDICT")[Chromosome_] += float(Cov) 
+        eval(str(Elephant_).replace('-', '')+"_CovDICT")[Chromosome_] += float(Cov) 
     else:
-        exec("globals()['"+ str(Elephant_)+"_CovDICT']" + "= defaultdict(int)") 
+        exec("globals()['"+ str(Elephant_).replace('-', '')+"_CovDICT']" + "= defaultdict(int)") 
         Cov = subprocess.check_output(Process_, shell=True)
-        eval(str(Elephant_)+"_CovDICT")[Chromosome_] += float(Cov)
+        eval(str(Elephant_).replace('-', '')+"_CovDICT")[Chromosome_] += float(Cov)
 
 def SetUpChangePointDictForElephant(Elephant_,Chrom ,StartPOS ,EndPOS): #NOT CURRENTLY USED
     SVinCPA = False
@@ -98,11 +98,11 @@ def GetHeterozygosity(data_, read_type):
             BAM_PATH =  sampleloc + str(ELEPHANT) + "/" + str(ELEPHANT) + "_sampe_sorted.bam"
             CHROM_REGION = str(str(Chromosome) + ":" + str(startPOS) + "-" + str(endPOS)).replace(" ", "")
 
-            ProcessToRun_SVcov = "samtools depth -r " + CHROM_REGION + " -b NonTE_Regions.bed " +  str(BAM_PATH) + "|  awk '{sum+=$3} END { print sum/NR}' "
+            ProcessToRun_SVcov = "samtools depth -r " + CHROM_REGION + " -b NonTE_Regions.bed " +  str(BAM_PATH) + "|  awk '{sum+=$3} END {if (NR > 0) { print sum/(NR)} else {print 0}}' "
 
             if read_type == "Rearrangements":
                 CHROM_REGION_m = str(str(Chromosome_m) + ":" + str(startPOS_m) + "-" + str(endPOS_m)).replace(" ", "")
-                ProcessToRun_SVcov_m = "samtools depth -r " + CHROM_REGION_m + " -b NonTE_Regions.bed " +  str(BAM_PATH) + "|  awk '{sum+=$3} END { print sum/NR}' "
+                ProcessToRun_SVcov_m = "samtools depth -r " + CHROM_REGION_m + " -b NonTE_Regions.bed " +  str(BAM_PATH) + "|  awk '{sum+=$3} END {if (NR > 0) { print sum/(NR)} else {print 0}}' "
 
             try:
                 try:
@@ -135,7 +135,10 @@ def GetHeterozygosity(data_, read_type):
                     
             try:
                 SVcov = subprocess.check_output(ProcessToRun_SVcov, shell=True)
-                CovProp = float(SVcov)/float(TotalCov)
+                if float(TotalCov) == 0:
+                    CovProp = 0                    
+                else:
+                    CovProp = float(SVcov)/float(TotalCov)
                 if float(TotalCov) > 0:
                     if CovProp > 1.8 and CovProp < 2.8:
                         SV_CoverageData.append("Homo")
@@ -158,7 +161,10 @@ def GetHeterozygosity(data_, read_type):
             if SV_TYPE == "Rearrangements":
                 try:
                     SVcov_m = subprocess.check_output(ProcessToRun_SVcov_m, shell=True)
-                    CovProp_m = float(SVcov_m)/float(TotalCov_m)
+                    if float(TotalCov_m) == 0:
+                        CovProp_m = 0
+                    else:
+                        CovProp_m = float(SVcov_m)/float(TotalCov_m)
                     if CovProp_m < CovProp_m:
                         PTally += 1
                     else:
