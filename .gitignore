@@ -10,3 +10,5 @@ scripts/Old/
 rules/SNPAnalysis.smk
 rules/SVCalling_ML.smk
 rules/SNPCalling_ML.smk
+scripts_ML
+.gitignore

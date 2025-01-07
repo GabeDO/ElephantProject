@@ -2,17 +2,17 @@ rule samtools_filter:
 	input:
 		Bam = SampleLocation+"/{sample}/{sample}_sampe_sorted.bam",
 	params:
-		Elephant = "{sample}"
+		Sample = "{sample}"
 	output:
 		TandemDups = SampleLocation +"/{sample}/{sample}_TandemDupsReads.out",
 		Rearrangements = SampleLocation +"/{sample}/{sample}_RearrangementsReads.out"
 	shell:
 		"""
-		samtools view -@ 16 -f 33 -F 284 {input.Bam} | awk '$7==\"=\"' |awk '$4>$8' |awk '$4-$8 > 150'| awk '$4-$8 < 10000'|awk '{{print $3, $4, $7, $8, \"{params.Elephant}\"}}' > {output.TandemDups}
-		samtools view -@ 16 -f 33 -F 284 {input.Bam} | awk '{{if($4-$8 > 100000 || $7 != \"=\" ||$8-$4 > 100000)print}}'| awk '{{print $3, $4, $7, $8, \"{params.Elephant}\"}}' > {output.Rearrangements}
+		samtools view -@ 16 -f 33 -F 284 {input.Bam} | awk '$7==\"=\"' |awk '$4>$8' |awk '$4-$8 > 150'| awk '$4-$8 < 10000'|awk '{{print $3, $4, $7, $8, \"{params.Sample}\"}}' > {output.TandemDups}
+		samtools view -@ 16 -f 33 -F 284 {input.Bam} | awk '{{if($4-$8 > 100000 || $7 != \"=\" ||$8-$4 > 100000)print}}'| awk '{{print $3, $4, $7, $8, \"{params.Sample}\"}}' > {output.Rearrangements}
 		"""
 
-rule pyScript_ClustingingWithinElephant:
+rule pyScript_ClustingingWithinSample:
 	input:
 		SampleLocation + "/{sample}/{sample}_{sv}Reads.out"
 	params:
@@ -20,9 +20,9 @@ rule pyScript_ClustingingWithinElephant:
 	output:
 		SampleLocation + "/{sample}/{sample}_Clustered{sv}.out"
 	script:
-		scripts+"WithinElephantClustering.py"
+		scripts+"WithinSampleClustering.py"
 
-rule CombineWithinElephantClusteringFiles:
+rule CombineWithinSampleClusteringFiles:
 	input:
 		expand(SampleLocation+"/{sample}/{sample}_Clustered{{sv}}.out", sample = SAMPLES)
 	output:
@@ -30,13 +30,13 @@ rule CombineWithinElephantClusteringFiles:
 	shell:
 		"sort -t, -k1,1 -k2,2n -k4,3n {input} > {output}"
 
-rule pyScript_ClustingBetweenElephants:
+rule pyScript_ClustingBetweenSamples:
 	input:
 		"Combined_Clustered{sv}.txt"
 	output:
 		"{sv}_all.csv"
 	script:
-		scripts+"ClusteringBetweenElephants.py"
+		scripts+"ClusteringBetweenSamples.py"
 
 rule Genotype_SVs:
 	priority:
@@ -46,8 +46,8 @@ rule Genotype_SVs:
 		NonTE_Regions = 'NonTE_Regions.bed'
 	params:
 		SV_Type = "{sv}",
-		PolarizationElephant = ANCESTRAL_SAMPLE_NAME,
-		AllElephants = SAMPLES,
+		PolarizationSample = ANCESTRAL_SAMPLE_NAME,
+		AllSamples = SAMPLES,
 		sampleloc = SampleLocation
 	output:
 		"{sv}_all_genotyped.csv"
@@ -86,7 +86,7 @@ rule Find_TEs_td:
 	input:
 		SV_td = "TandemDups_all_genotyped_GeneID.csv",
 		ref = REF,
-		DB = "/projects/rogers_research/fnb/GabeO/ElephantProject/BlastDB/Repbase_all.fa"
+		DB = BlastDB + "Repbase_all.fa"
 	params:
 		CHR = "{chromosome}"
 	output:
@@ -98,7 +98,7 @@ rule Find_TEs_re:
 	input:
 		SV_re = "Rearrangements_all_genotyped_GeneID.csv",
 		ref = REF,
-		DB = "/projects/rogers_research/fnb/GabeO/ElephantProject/BlastDB/Repbase_all.fa"
+		DB =  BlastDB + "Repbase_all.fa"
 	params:
 		CHR = "{chromosome}"
 	output:
