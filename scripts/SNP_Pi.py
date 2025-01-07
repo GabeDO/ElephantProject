@@ -18,14 +18,14 @@ for Chromosome in CHROM_LIST_NOSEX:
 
     
     pi, windows, n_bases, counts = allel.windowed_diversity(data_vcf['variants/POS'], ac, size=10000, step=1000)
-    
+    TajD, windows, counts = allel.windowed_tajima_d(data_vcf['variants/POS'], ac, size=10000, step=1000)
     for i in range(len(pi)):
-        pilist.append([Chromosome, pi[i], windows[i][0], n_bases[i], counts[i]])
+        pilist.append([Chromosome, pi[i],TajD[i], windows[i][0], n_bases[i], counts[i]])
 
 
 OutputFile = str(snakemake.output[0])
 
 with open(OutputFile, "w") as f:
     writer = csv.writer(f)
-    writer.writerow(["Chromosome","Pi","Window","Bases","counts"]) 
+    writer.writerow(["Chromosome","Pi","TajD","Window","Bases","counts"]) 
     writer.writerows(pilist)   

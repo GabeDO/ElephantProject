@@ -5,3 +5,8 @@ FireFlies_Margot/
 Samples/
 SnakeMakePipeline/
 References/
+rules/MAPQFILTERING.smk
+scripts/Old/
+rules/SNPAnalysis.smk
+rules/SVCalling_ML.smk
+rules/SNPCalling_ML.smk

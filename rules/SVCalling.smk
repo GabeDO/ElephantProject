@@ -1,24 +1,3 @@
-#rule Find_TEs:
-#	priority:
-#		1
-#	input:
-#		ref=REF,
-#		reffai = REF + ".fai",
-#		reps = '/projects/rogers_research/fnb/RefGenomes/Repbase_all.fa'
-#	output:
-#		TE_BAM = "TE.bam",
-#		TE_Regions = 'TE_Regions.bed',
-#		Genome = "Elephant.Genome",
-#		NonTE_Regions = 'NonTE_Regions.bed' 
-#	shell: 
-#		'''
-#		bwa mem -t 32 {input.ref} {input.reps} > {output.TE_BAM}
-#		bamToBed -ed -i {output.TE_BAM} > {output.TE_Regions}
-#		cut -f 1,2  {input.reffai} > {output.Genome}
-#		bedtools sort -g {output.Genome} -i {output.TE_Regions} > TE_Regions.temp && mv TE_Regions.temp {output.TE_Regions}
-#		bedtools complement -i {output.TE_Regions} -g {output.Genome} > {output.NonTE_Regions}
-#		'''
-
 rule samtools_filter:
 	input:
 		Bam = SampleLocation+"/{sample}/{sample}_sampe_sorted.bam",
@@ -67,8 +46,8 @@ rule Genotype_SVs:
 		NonTE_Regions = 'NonTE_Regions.bed'
 	params:
 		SV_Type = "{sv}",
-		PolarizationElephant = 'ERR2260497',
-		AllElephants = SAMPLES_Asian,
+		PolarizationElephant = ANCESTRAL_SAMPLE_NAME,
+		AllElephants = SAMPLES,
 		sampleloc = SampleLocation
 	output:
 		"{sv}_all_genotyped.csv"
@@ -92,7 +71,7 @@ rule Find_Genes_on_SVs:
 
 rule pNpS_per_gene:
 	input:
-		path_vcf = "SNPs/AllChrom_Elephant_SNPs_NoMissing.vcf.gz",
+		path_vcf = "SNPs/AllChrom_SNPs_NoMissing.vcf.gz",
 		GTF = GTFfile,
 		DNDS_path = "SNPs_Synonymous_NSSN.csv",
 		TD_data = "TandemDups_all_genotyped_GeneID.csv",
