@@ -17,3 +17,4 @@ SampleLocation = "" #Path to where the pipeline will create BAM files and other 
 Source_SampleLocation = "" #Path to your fasta samples. Each sample must be in its own folder named with its sample ID. This can be the same location as 'SampleLocation' if you dont mind everything in the same foilder - although I would not reccomend it. 
 
 scripts = "" #path the the pipelines 'scripts' folder
+BlastBD = "BlastDB/"
