@@ -1,4 +1,7 @@
 Structural variant calling snakemake pipeline developed by Dr Gabe O'Reilly at UNCC.
+Funded in part by NIH NIGMS MIRA R35 GM133376 to RL Rogers.
+
+
 
 Requires:
 snakemake
