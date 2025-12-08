@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jan 25 15:53:30 2024
+Created on Mon Nov  3 19:24:16 2025
 
-@author: goreill1
+@author: Gabe
 """
-
-#'''
-#Created on Wed May 24 11:54:47 2023
-#@author: goreilli
-#'''
 
 import gzip
 import sys
@@ -19,6 +14,12 @@ import os
 import csv
 import numpy as np
 from collections import defaultdict
+
+def open_smart(filename, mode = "rt"):
+    if filename.endswith(".gz"):
+        return(gzip.open(filename, mode, newline = ''))
+    else:
+        return(open(filename, mode, newline = ''))
 
 
 def CheckSV(SVStart, SVEnd, InputStart, InputEnd, type_, Start_, End_):
@@ -37,7 +38,7 @@ def CheckSV(SVStart, SVEnd, InputStart, InputEnd, type_, Start_, End_):
 
 GTF = str(snakemake.input[0])
 
-with gzip.open(GTF, "rt", newline = '') as file: ##with gzip.open (GTF, "rt", newline = ") as file:
+with open_smart(GTF, "rt") as file: ##with gzip.open (GTF, "rt", newline = ") as file:
     rows = csv.reader (file, delimiter='\t')
     for row in rows:
         try:
@@ -117,6 +118,7 @@ with open(CSVfile, 'r') as file:
             
             
             #check if the SV chromosome is found in the GTF. If it isn't, skip it
+            
             if SV[0].replace(".", "_") in locals ():
                 #now iterate through the dictionary of genes in that chrom
                 for key, values in eval(SV[0].replace(".", "_")).items():
@@ -159,12 +161,17 @@ with open(CSVfile, 'r') as file:
                             else: #if not, it just hits an intron
                                 Result = [key,GeneLength,ExonNumber,0,0,0,"Intronic"]
                                 
-                   #A quick elseif to see if its in the range of the gene if its extended by 10,000 - checking if its adjacent.
+                    #A quick elseif to see if its in the range of the gene if its extended by 10,000 - checking if its adjacent.
                     elif len(range(max(SVStart,values[0][1]-10000), min(SVEnd,values[0][2]+10000))) > 0:
                         Result = [key,GeneLength,ExonNumber,0,0,0,"Adjacent"]
                         
                         
-                    if SV_TYPE == 'Rearrangements':
+            if SV_TYPE == 'Rearrangements' and SV[2] == "=":
+                if SV[0].replace(".", "_") in locals ():
+                    for key, values in eval(SV[0].replace(".", "_")).items():
+                        #get the gene length and save it for later
+                        GeneLength = values[0][-1]
+                        ExonNumber = len(values)
                         if len(range(max(SVStart_m,values[0][1]), min(SVEnd_m,values[0][2]))) > 0:
                             #if it does overlap, see if the SV covers the whole gene. If so, just mark it as "Whole Gene" and call it a day
                             if SVStart_m < values[0][1] and SVEnd_m > values[0][2] and values[0][0] == "gene":
@@ -199,11 +206,51 @@ with open(CSVfile, 'r') as file:
                         #A quick elseif to see if its in the range of the gene if its extended by 10,000 - checking if its adjacent.
                         elif len(range(max(SVStart_m,values[0][1]-10000), min(SVEnd_m,values[0][2]+10000))) > 0:
                             Result_m = [key,GeneLength,ExonNumber,0,0,0,"Adjacent"]
-                            
-                    if SV_TYPE == 'Rearrangements':        
-                        ResultsDic[SVID] = [SV+Result+Result_m]
-                    else:
-                        ResultsDic[SVID] = [SV+Result]
+                    
+            elif SV_TYPE == 'Rearrangements' and SV[2] != "=":
+                if SV[2].replace(".", "_") in locals ():
+                    for key, values in eval(SV[2].replace(".", "_")).items():
+                        #get the gene length and save it for later
+                        GeneLength = values[0][-1]
+                        ExonNumber = len(values)
+                        if len(range(max(SVStart_m,values[0][1]), min(SVEnd_m,values[0][2]))) > 0:
+                            #if it does overlap, see if the SV covers the whole gene. If so, just mark it as "Whole Gene" and call it a day
+                            if SVStart_m < values[0][1] and SVEnd_m > values[0][2] and values[0][0] == "gene":
+                                Result_m = [key,GeneLength,ExonNumber,'NA','NA','NA',"Whole Gene"]
+                                ResultsDic_m[SVID] += Result_m
+                            #otherwise, iterate through all the exons/codons/etc
+                            else:
+                                #set up a little value table
+                                Hits = [key,GeneLength,ExonNumber,0,0,0]
+                                Start_Info = "SV starts at an Intron"
+                                End_Info = "SV ends at an Intron"
+                                for g in values:
+                                    #add to the value table based on the type of data
+                                    #Check if its overlapping on an exon, and if so add to the results table
+                                    if len(range(max(SVStart_m,g[1]), min(SVEnd_m,g[2])+1)) > 0 and g[0] in ["exon", "start_codon","stop_codon"]:
+                                        if g[0] == "exon":
+                                            Hits[3] += 1
+                                            Start_Info, End_Info = CheckSV(SVStart_m, SVEnd_m, g[1], g[2], g[0],Start_Info,End_Info)
+                                        elif g[0] == "start_codon":
+                                            Hits[4] += 1
+                                            Start_Info, End_Info = CheckSV(SVStart_m, SVEnd_m, g[1], g[2], g[0],Start_Info,End_Info)
+                                        elif g[0] == "stop_codon":
+                                            Hits[5] += 1
+                                            Start_Info, End_Info = CheckSV(SVStart_m, SVEnd_m, g[1], g[2], g[0],Start_Info,End_Info)
+                                            
+                                        
+                                if sum(Hits[3:]) > 0: #Check if it actually hiyt anything. No intron-intron SVs unless theres an exon inbetween
+                                    Result_m = Hits + [Start_Info + " " + End_Info]
+                                else: #if not, it just hits an intron
+                                    Result_m = [key,GeneLength,ExonNumber,0,0,0,"Intronic"]
+                        
+                    
+                    
+                    
+            if SV_TYPE == 'Rearrangements':        
+                ResultsDic[SVID] = [SV+Result+Result_m]
+            else:
+                ResultsDic[SVID] = [SV+Result]
                         
             if ResultsDic[SVID] == []:
                 if SV_TYPE == 'Rearrangements':
@@ -223,10 +270,3 @@ with open(Outputfile, 'w', newline='') as f:
         writer.writerows(ResultsDic[key])
 
         
-#print('________________________________')
-#print(SV_TYPE)
-#print('________________________________')
-#for key, values in GeneHitCounter.items():
-#    print(str(key)+ ": "+ str(values))
-#print('________________________________')
-#print('________________________________')
