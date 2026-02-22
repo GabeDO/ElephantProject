@@ -54,18 +54,29 @@ rule Genotype_SVs:
 	script:
 		scripts+"SV_GetGenotype.py"
 
-rule Find_Genes_on_SVs:
+rule Find_Genes_on_SVs_perchom:
 	priority:
 		1
 	input:
 		GTFfile,
 		"{sv}_all_genotyped.csv"
 	params:
-		SV_Type = "{sv}"
+		SV_Type = "{sv}",
+		chrom  = lambda wildcards: wildcards.chromosome
 	output:
-		"{sv}_all_genotyped_GeneID.csv"
+		temp("{sv}_all_genotyped_GeneID_{chromosome}.csv")
 	script:
 		scripts+"FindGenesSV.py"
+
+rule merge_Genes_on_SVs_perchom:
+	input:
+		expand("{sv}_all_genotyped_GeneID_{chromosome}.csv", sv = SV, chromosome = CHROM_LIST),
+	output:
+		"{sv}_all_genotyped_GeneID.csv" 
+	shell:
+		"""
+		awk 'FNR>1 || NR==1' {input} > {output}
+		"""
 
 
 
