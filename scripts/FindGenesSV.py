@@ -94,7 +94,7 @@ with open(CSVfile, 'r') as file:
                 OutputHeader = [SV+['GeneID','GeneLength','ExonNumber','ExonsHit','StartCodonHit','StopCodonHit','MutationInfo']+['GeneID_m','GeneLength_m','ExonNumber_m','ExonsHit_m','StartCodonHit_m','StopCodonHi_m','MutationInfo_m']]
             else:
                 OutputHeader = [SV+['GeneID','GeneLength','ExonNumber','ExonsHit','StartCodonHit','StopCodonHit','MutationInfo']]
-        elif SV[0] != "Chromosome":
+        elif SV[0] == str(snakemake.params[1]): #check if the pair chrom is the one snakemake is looking at atm (to split jobs by chr in snakemake)
             
             #make an ID for each SV: "chom_start-end"
             Result,Result_m = ['Not on Gene',0,0,0,0,0,'None'], ['Not on Gene',0,0,0,0,0,'None'] 
